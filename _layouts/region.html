@@ -1,0 +1,109 @@
+---
+layout: default
+---
+
+<div class="page-with-sidebar">
+<div class="region-page">
+
+  <nav class="breadcrumb" aria-label="위치">
+    <a href="/">홈</a>
+    <span>›</span>
+    <span>{{ page.do_name }}</span>
+  </nav>
+
+  <div class="region-page-header">
+    <h1>🚸 {{ page.title_h1 }}</h1>
+    <p>{{ page.subtitle }}</p>
+  </div>
+
+  <!-- 광고 -->
+  <div class="ad-slot">
+    {% include ad.html %}
+  </div>
+
+  <!-- 필터 -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all" onclick="filterItems('all', this)">전체</button>
+    <button class="filter-btn" data-filter="초등학교" onclick="filterItems('초등학교', this)">초등학교</button>
+    <button class="filter-btn" data-filter="유치원" onclick="filterItems('유치원', this)">유치원</button>
+    <button class="filter-btn" data-filter="어린이집" onclick="filterItems('어린이집', this)">어린이집</button>
+    <button class="filter-btn" data-filter="특수학교" onclick="filterItems('특수학교', this)">특수학교</button>
+  </div>
+
+  <p id="itemCount" style="font-size:.87rem;color:#6B7280;margin-bottom:16px;"></p>
+
+  <div class="camp-grid" id="itemGrid">
+    <p style="color:#6B7280;">로딩 중...</p>
+  </div>
+
+  <!-- 안내 텍스트 -->
+  <div style="margin-top:40px;background:#F9FAFB;border-radius:14px;padding:24px 28px;">
+    <h2 style="font-size:1.05rem;font-weight:700;margin-bottom:12px;">{{ page.do_name }} 어린이보호구역 안내</h2>
+    <p style="color:#374151;line-height:1.8;font-size:.9375rem;margin-bottom:16px;">
+      {{ page.do_name }}의 어린이보호구역을 시설종류별로 검색할 수 있습니다. 초등학교·유치원·어린이집 등
+      주 출입문 반경 300m 이내를 지방자치단체가 지정한 구역으로, 자동차 통행속도가 시속 30km 이내로 제한됩니다.
+    </p>
+    <details style="margin-bottom:10px;">
+      <summary style="cursor:pointer;font-weight:600;padding:6px 0;">어린이보호구역에서는 뭐가 다른가요?</summary>
+      <p style="padding:6px 0 4px;color:#374151;line-height:1.7;">「도로교통법」에 따라 통행속도가 시속 30km로 제한되고, 시간대에 따라 주정차가 금지되며 위반 시 범칙금·벌점이 일반구역보다 무겁게 부과됩니다.</p>
+    </details>
+    <details>
+      <summary style="cursor:pointer;font-weight:600;padding:6px 0;">CCTV 정보는 정확한가요?</summary>
+      <p style="padding:6px 0 4px;color:#374151;line-height:1.7;">지방자치단체가 제공하는 공공데이터 기준으로, 실제 설치 현황과 시차가 있을 수 있습니다. 정확한 단속 여부는 관할 경찰서에 문의하세요.</p>
+    </details>
+  </div>
+
+</div>
+<aside class="tool-sidebar"></aside>
+</div>
+
+<script>
+const DO_NAME = {{ page.do_name | jsonify }};
+let allItems = [];
+
+(async () => {
+  const resp = await fetch('/search_index.json');
+  const all  = await resp.json();
+  allItems = all.filter(f => f.doShort === DO_NAME);
+  document.getElementById('itemCount').textContent = `총 ${allItems.length}곳`;
+  renderItems(allItems);
+})();
+
+function itemCard(f) {
+  return `<a class="camp-card" href="/zone/${f.slug}/">
+    <div class="camp-card-img-placeholder">🚸</div>
+    <div class="camp-card-body">
+      <div class="camp-card-name">${f.n}</div>
+      <div class="camp-card-loc">📍 ${f.sigungu || ''}</div>
+      <div class="camp-card-tags">
+        <span class="tag tag-type">${f.kind || ''}</span>
+        ${f.cctv === 'Y' ? `<span class="tag tag-safe">📹 CCTV</span>` : ''}
+      </div>
+    </div>
+  </a>`;
+}
+
+function filterItems(kind, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  let filtered = allItems;
+  if (kind !== 'all') {
+    filtered = allItems.filter(f => f.kind === kind);
+  }
+  document.getElementById('itemCount').textContent = `총 ${filtered.length}곳`;
+  renderItems(filtered);
+}
+
+function renderItems(items) {
+  const grid = document.getElementById('itemGrid');
+  if (items.length === 0) {
+    grid.innerHTML = '<p style="color:#6B7280;grid-column:1/-1;">해당 조건의 어린이보호구역이 없습니다.</p>';
+    return;
+  }
+  const MAX = 300;
+  grid.innerHTML = items.slice(0, MAX).map(itemCard).join('');
+  if (items.length > MAX) {
+    grid.innerHTML += `<p style="grid-column:1/-1;color:#6B7280;font-size:.85rem;padding:12px 0;">${items.length - MAX}곳이 더 있습니다. 검색으로 좁혀보세요.</p>`;
+  }
+}
+</script>
