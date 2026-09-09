@@ -118,12 +118,17 @@ layout: default
   const addr = {{ page.addr | jsonify }};
 
   const mapEl = document.getElementById('map');
-  if (mapEl) {
-    if (lat && lng) {
-      mapEl.innerHTML = `<iframe src="https://map.kakao.com/link/map/${encodeURIComponent({{ page.zoneName | jsonify }})},${lat},${lng}" style="width:100%;height:100%;border:0;border-radius:10px;" loading="lazy"></iframe>`;
-    } else if (addr) {
-      mapEl.innerHTML = `<iframe src="https://map.kakao.com/?q=${encodeURIComponent(addr)}" style="width:100%;height:100%;border:0;border-radius:10px;" loading="lazy"></iframe>`;
-    }
+  if (mapEl && lat && lng) {
+    const script = document.createElement('script');
+    script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=78e249ab403b2955e4ca71e71f658549';
+    script.onload = () => {
+      const center = new kakao.maps.LatLng(lat, lng);
+      const map = new kakao.maps.Map(mapEl, { center, level: 4 });
+      new kakao.maps.Marker({ map, position: center });
+    };
+    document.head.appendChild(script);
+  } else if (mapEl) {
+    mapEl.innerHTML = '<p style="padding:20px;text-align:center;color:#9CA3AF;">좌표 정보가 없어 지도를 표시할 수 없습니다. 아래 버튼으로 확인하세요.</p>';
   }
 
   try {
