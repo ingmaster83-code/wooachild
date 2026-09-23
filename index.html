@@ -1,7 +1,7 @@
 ---
 layout: default
-title: 전국 어린이보호구역 찾기
-description: 전국 14,645곳의 어린이보호구역(스쿨존) 위치와 CCTV 설치 현황을 지역별로 검색하세요. 초등학교·유치원·어린이집 주변 통행속도 제한구역 정보입니다.
+title: 전국 어린이·노인장애인보호구역 찾기
+description: 전국 14,645곳의 어린이보호구역(스쿨존)과 4,162곳의 노인장애인보호구역 위치, CCTV 설치 현황을 지역별로 검색하세요. 초등학교·유치원·어린이집, 경로당·양로원 주변 통행속도 제한구역 정보입니다.
 ---
 
 <!-- 히어로 & 검색 -->
@@ -66,6 +66,36 @@ description: 전국 14,645곳의 어린이보호구역(스쿨존) 위치와 CCTV
   {% include ad.html %}
 </div>
 
+<!-- 노인장애인보호구역 -->
+<div class="section">
+  <h2 class="section-title">🦯 지역별 노인장애인보호구역 찾기</h2>
+  <p style="color:#6B7280;font-size:.9rem;margin:-8px 0 14px;">경로당·양로원 등 노인·장애인 보호시설 주변 생활보호구역 <strong id="silverTotalCount">-</strong>곳</p>
+  <div class="region-grid">
+    <a href="/silverregion/경기/" class="region-btn"><span class="region-icon">🌆</span>경기<span class="region-count"></span></a>
+    <a href="/silverregion/서울/" class="region-btn"><span class="region-icon">🏙️</span>서울<span class="region-count"></span></a>
+    <a href="/silverregion/경남/" class="region-btn"><span class="region-icon">🎋</span>경남<span class="region-count"></span></a>
+    <a href="/silverregion/경북/" class="region-btn"><span class="region-icon">🍎</span>경북<span class="region-count"></span></a>
+    <a href="/silverregion/전남/" class="region-btn"><span class="region-icon">🐚</span>전남<span class="region-count"></span></a>
+    <a href="/silverregion/충남/" class="region-btn"><span class="region-icon">🌊</span>충남<span class="region-count"></span></a>
+    <a href="/silverregion/부산/" class="region-btn"><span class="region-icon">🌅</span>부산<span class="region-count"></span></a>
+    <a href="/silverregion/전북/" class="region-btn"><span class="region-icon">🌾</span>전북<span class="region-count"></span></a>
+    <a href="/silverregion/대전/" class="region-btn"><span class="region-icon">🏛️</span>대전<span class="region-count"></span></a>
+    <a href="/silverregion/충북/" class="region-btn"><span class="region-icon">📖</span>충북<span class="region-count"></span></a>
+    <a href="/silverregion/대구/" class="region-btn"><span class="region-icon">🍑</span>대구<span class="region-count"></span></a>
+    <a href="/silverregion/강원/" class="region-btn"><span class="region-icon">🏔️</span>강원<span class="region-count"></span></a>
+    <a href="/silverregion/인천/" class="region-btn"><span class="region-icon">⚓</span>인천<span class="region-count"></span></a>
+    <a href="/silverregion/광주/" class="region-btn"><span class="region-icon">🎨</span>광주<span class="region-count"></span></a>
+    <a href="/silverregion/제주/" class="region-btn"><span class="region-icon">🌺</span>제주<span class="region-count"></span></a>
+    <a href="/silverregion/울산/" class="region-btn"><span class="region-icon">🏭</span>울산<span class="region-count"></span></a>
+    <a href="/silverregion/세종/" class="region-btn"><span class="region-icon">🌿</span>세종<span class="region-count"></span></a>
+  </div>
+</div>
+
+<!-- 광고 -->
+<div class="top-ad-bar">
+  {% include ad.html %}
+</div>
+
 <!-- 유형별 찾기 -->
 <div class="section">
   <h2 class="section-title">🏫 시설종류별 어린이보호구역</h2>
@@ -105,9 +135,15 @@ let fuse = null;
 
 async function loadIndex() {
   if (fuseIndex) return;
-  const resp = await fetch('/search_index.json');
-  fuseIndex = await resp.json();
-  document.getElementById('totalCount').textContent = fuseIndex.length.toLocaleString();
+  const [childResp, silverResp] = await Promise.all([
+    fetch('/search_index.json'),
+    fetch('/silver_search_index.json'),
+  ]);
+  const childItems = (await childResp.json()).map(f => ({ ...f, type: 'child' }));
+  const silverItems = (await silverResp.json()).map(f => ({ ...f, type: 'silver' }));
+  fuseIndex = childItems.concat(silverItems);
+  document.getElementById('totalCount').textContent = childItems.length.toLocaleString();
+  document.getElementById('silverTotalCount').textContent = silverItems.length.toLocaleString();
   fuse = new Fuse(fuseIndex, {
     keys: ['n', 'doShort', 'sigungu', 'addr', 'kind'],
     threshold: 0.3,
@@ -143,13 +179,17 @@ function doSearch() {
 }
 
 function searchResultItem(f) {
+  const isSilver = f.type === 'silver';
+  const href = isSilver ? `/silverzone/${f.slug}/` : `/zone/${f.slug}/`;
+  const icon = isSilver ? '🦯' : '🚸';
+  const label = isSilver ? '노인장애인보호구역' : (f.kind || '');
   return `<div class="search-result-item">
-    <a href="/zone/${f.slug}/">
-      <div class="search-result-thumb" style="background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:1.5rem;border-radius:6px;">🚸</div>
+    <a href="${href}">
+      <div class="search-result-thumb" style="background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:1.5rem;border-radius:6px;">${icon}</div>
       <div>
         <div class="search-result-name">${f.n}</div>
         <div class="search-result-loc">📍 ${f.doShort || ''} ${f.sigungu || ''}</div>
-        ${f.kind ? `<span class="search-result-tag">${f.kind}</span>` : ''}
+        ${label ? `<span class="search-result-tag">${label}</span>` : ''}
       </div>
     </a>
   </div>`;

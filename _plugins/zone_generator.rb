@@ -15,6 +15,16 @@ module Jekyll
       end
 
       Jekyll.logger.info "ZoneGenerator:", "완료 (#{items.size}개)"
+
+      silver_items = load_json(site, '_rawdata/silverzone.json')
+
+      Jekyll.logger.info "SilverZoneGenerator:", "#{silver_items.size}개 노인장애인보호구역 페이지 생성 중..."
+      silver_items.each do |z|
+        next if z['slug'].to_s.strip.empty?
+        site.pages << SilverZonePage.new(site, z)
+      end
+
+      Jekyll.logger.info "SilverZoneGenerator:", "완료 (#{silver_items.size}개)"
     end
 
     private
@@ -55,6 +65,36 @@ module Jekyll
       loc = [z['doShort'], z['sigungu']].compact.join(' ')
       cctv = z['cctvYn'] == 'Y' ? "CCTV #{z['cctvCount']}대 설치" : 'CCTV 정보 확인'
       "#{loc} #{z['zoneName']} 어린이보호구역(#{z['kind']}). #{cctv}. 관할: #{z['policeStation']}"[0, 155]
+    end
+  end
+
+  class SilverZonePage < Page
+    def initialize(site, z)
+      @site = site
+      @base = site.source
+      @dir  = "silverzone/#{z['slug']}"
+      @name = 'index.html'
+
+      self.process(@name)
+      self.read_yaml(File.join(@base, '_layouts'), 'silverzone.html')
+      self.data.merge!(z)
+      self.data['layout']      = 'silverzone'
+      self.data['title']       = build_title(z)
+      self.data['description'] = build_desc(z)
+    end
+
+    private
+
+    def build_title(z)
+      loc = [z['doShort'], z['sigungu']].compact.join(' ')
+      "#{z['zoneName']} 노인장애인보호구역 #{loc} 위치·CCTV 안내"
+    end
+
+    def build_desc(z)
+      loc = [z['doShort'], z['sigungu']].compact.join(' ')
+      cctv = z['cctvYn'] == 'Y' ? "CCTV #{z['cctvCount']}대 설치" : 'CCTV 정보 확인'
+      speed = z['speedLimit'].to_s != '' ? "제한속도 시속 #{z['speedLimit']}km." : ''
+      "#{loc} #{z['zoneName']} 노인장애인보호구역. #{speed} #{cctv}. 관할: #{z['policeStation']}"[0, 155]
     end
   end
 end
